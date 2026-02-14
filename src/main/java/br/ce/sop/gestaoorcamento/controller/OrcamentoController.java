@@ -24,17 +24,17 @@ public class OrcamentoController {
 
     @PostMapping
     public ResponseEntity<OrcamentoResponseDTO> criar(@RequestBody @Valid OrcamentoRequestDTO dto) {
-        Orcamento orcamento = service.criar(dto);
-        OrcamentoResponseDTO response = converterParaDTO(orcamento);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(dto));
     }
 
-    private OrcamentoResponseDTO converterParaDTO(Orcamento o) {
-        List<ItemResponseDTO> itensDTO = o.getItens().stream()
-                .map(i -> new ItemResponseDTO(i.getId(), i.getDescricao(), i.getQuantidade(), i.getValorUnitario(), i.getValorTotal()))
-                .toList();
-
-        return new OrcamentoResponseDTO(o.getId(), o.getNumeroProtocolo(),o.getTipo().getDescricao(), o.getStatus().name(), o.getValorTotal(), itensDTO);
+    @GetMapping("/{id}")
+    public ResponseEntity<OrcamentoResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(service.buscarPorId(id));
     }
+
+    @GetMapping
+    public ResponseEntity<List<OrcamentoResponseDTO>> listar() {
+        return ResponseEntity.ok(service.listarTodos());
+    }
+
 }
