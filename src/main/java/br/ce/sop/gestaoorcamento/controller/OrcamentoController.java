@@ -37,4 +37,10 @@ public class OrcamentoController {
         return ResponseEntity.ok(service.listarTodos());
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // Retorna 204 se der certo
+    public void deletar(@PathVariable Long id) {
+        service.deletar(id);
+    }
+
 }

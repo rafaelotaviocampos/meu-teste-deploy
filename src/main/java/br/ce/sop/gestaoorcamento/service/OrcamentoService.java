@@ -82,4 +82,14 @@ public class OrcamentoService {
                 itensDTO
         );
     }
+
+    @Transactional
+    public void deletar(Long id) {
+        Orcamento orcamento = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Orçamento não encontrado"));
+
+        // Por causa do @SoftDelete, ele vai apenas dar um UPDATE na coluna de controle.
+        repository.delete(orcamento);
+    }
+
 }
