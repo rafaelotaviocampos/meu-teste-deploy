@@ -43,4 +43,9 @@ public class OrcamentoController {
         service.deletar(id);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<OrcamentoResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid OrcamentoRequestDTO dto) {
+        return ResponseEntity.ok(service.atualizar(id, dto));
+    }
+
 }

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public record ItemRequestDTO(
+        Long id,
         @NotBlank(message = "A descrição do item é obrigatória")
         String descricao,
 
@@ -15,5 +16,13 @@ public record ItemRequestDTO(
 
         @NotNull(message = "O valor unitário é obrigatório")
         @Positive(message = "O valor unitário deve ser maior que zero")
-        BigDecimal valorUnitario
-) {}
+        BigDecimal valorUnitario,
+
+        Boolean excluir
+) {
+        public ItemRequestDTO {
+                if (excluir == null) {
+                        excluir = false;
+                }
+        }
+}

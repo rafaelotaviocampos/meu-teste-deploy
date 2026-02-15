@@ -50,4 +50,23 @@ public class Medicao extends BaseEntity {
 
     @OneToMany(mappedBy = "medicao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemMedicao> itensMedicao = new ArrayList<>();
+
+    public void adicionarItem(ItemMedicao item) {
+        this.itensMedicao.add(item);
+        item.setMedicao(this);
+    }
+
+    public boolean isEditavel() {
+        return this.status == StatusMedicao.ABERTA;
+    }
+
+    public void validar() {
+        if (!isEditavel()) {
+            throw new RuntimeException("Operação não permitida: A medição não está mais em estado ABERTO.");
+        }
+        this.status = StatusMedicao.VALIDADA;
+        this.dataValidacao = LocalDateTime.now();
+    }
+
+
 }
