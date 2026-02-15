@@ -29,6 +29,10 @@ public class MedicaoService {
             throw new RuntimeException("Já existe uma medição aberta para este orçamento.");
         }
 
+        medicaoRepository.findByNumeroMedicao(dto.numeroMedicao()).ifPresent(m -> {
+            throw new RuntimeException("O número de medição '" + dto.numeroMedicao() + "' já foi utilizado.");
+        });
+
         var orcamento = orcamentoRepository.findById(dto.orcamentoId())
                 .orElseThrow(() -> new RuntimeException("Orçamento não encontrado"));
 
@@ -46,18 +50,8 @@ public class MedicaoService {
 
     @Transactional
     public MedicaoResponseDTO atualizar(Long id, MedicaoRequestDTO dto) {
-        Medicao medicao = buscarEValidarMedicao(id);
+        Medicao medicao = buscarEValidarMedicaoAberta(id);
 
-        // ESTORNO
-        medicao.getItensMedicao().forEach(itemMedido -> {
-            var itemOrcamento = itemMedido.getItem();
-            itemOrcamento.setQuantidadeAcumulada(
-                    itemOrcamento.getQuantidadeAcumulada().subtract(itemMedido.getQuantidadeMedida())
-            );
-            itemRepository.save(itemOrcamento);
-        });
-
-        medicao.getItensMedicao().clear();
         medicao.setNumeroMedicao(dto.numeroMedicao());
         medicao.setObservacao(dto.observacao());
 
@@ -68,32 +62,43 @@ public class MedicaoService {
 
     @Transactional
     public void validar(Long id) {
-        Medicao medicao = buscarEValidarMedicao(id);
-        medicao.validar();
+        Medicao medicao = medicaoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Medição não encontrada"));
+
+        if (medicao.getStatus() == StatusMedicao.VALIDADA) {
+            throw new RuntimeException("Esta medição já foi validada.");
+        }
+
+        medicao.getItensMedicao().forEach(itemMedido -> {
+            var itemOrcamento = itemMedido.getItem();
+
+            BigDecimal novoAcumulado = itemOrcamento.getQuantidadeAcumulada().add(itemMedido.getQuantidadeMedida());
+
+            if (novoAcumulado.compareTo(itemOrcamento.getQuantidade()) > 0) {
+                throw new RuntimeException("Falha na validação: Saldo insuficiente para o item " + itemOrcamento.getDescricao());
+            }
+
+            itemOrcamento.setQuantidadeAcumulada(novoAcumulado);
+            itemRepository.save(itemOrcamento);
+        });
+
+        medicao.setStatus(StatusMedicao.VALIDADA);
         medicaoRepository.save(medicao);
     }
 
     @Transactional
     public void deletar(Long id) {
-        Medicao medicao = buscarEValidarMedicao(id);
-
-        medicao.getItensMedicao().forEach(itemMedido -> {
-            var itemOrcamento = itemMedido.getItem();
-            itemOrcamento.setQuantidadeAcumulada(
-                    itemOrcamento.getQuantidadeAcumulada().subtract(itemMedido.getQuantidadeMedida())
-            );
-            itemRepository.save(itemOrcamento);
-        });
+        Medicao medicao = buscarEValidarMedicaoAberta(id);
 
         medicaoRepository.delete(medicao);
     }
 
-    private Medicao buscarEValidarMedicao(Long id) {
+    private Medicao buscarEValidarMedicaoAberta(Long id) {
         Medicao medicao = medicaoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Medição não encontrada"));
 
-        if (!medicao.isEditavel()) {
-            throw new RuntimeException("Operação não permitida: A medição não está mais em estado ABERTO.");
+        if (medicao.getStatus() != StatusMedicao.ABERTA) {
+            throw new RuntimeException("Operação negada: Apenas medições com status ABERTA podem ser alteradas ou removidas.");
         }
         return medicao;
     }
@@ -102,31 +107,56 @@ public class MedicaoService {
         BigDecimal valorTotalMedicao = BigDecimal.ZERO;
 
         for (ItemMedicaoRequestDTO itemDto : itensDto) {
-            var itemOrcamento = itemRepository.findById(itemDto.itemOrcamentoId())
-                    .orElseThrow(() -> new RuntimeException("Item do orçamento não encontrado"));
+            if (itemDto.id() != null) {
+                // --- CASO 1: ATUALIZAÇÃO OU EXCLUSÃO ---
+                ItemMedicao itemMedidoExistente = medicao.getItensMedicao().stream()
+                        .filter(im -> im.getId().equals(itemDto.id()))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("Item de medição ID " + itemDto.id() + " não pertence a esta medição"));
 
-            BigDecimal novoAcumulado = itemOrcamento.getQuantidadeAcumulada().add(itemDto.quantidadeMedida());
+                if (itemDto.excluir()) {
+                    medicao.getItensMedicao().remove(itemMedidoExistente);
+                    continue; // Pula para o próximo item, este foi removido
+                }
 
-            if (novoAcumulado.compareTo(itemOrcamento.getQuantidade()) > 0) {
-                throw new RuntimeException("Saldo insuficiente para o item: " + itemOrcamento.getDescricao());
+                // Validação de saldo para atualização
+                validarSaldoItemOrcamento(itemMedidoExistente.getItem(), itemDto.quantidadeMedida());
+
+                // Atualiza os valores do item existente
+                itemMedidoExistente.setQuantidadeMedida(itemDto.quantidadeMedida());
+                BigDecimal novoTotalItem = itemDto.quantidadeMedida().multiply(itemMedidoExistente.getItem().getValorUnitario());
+                itemMedidoExistente.setValorTotalMedido(novoTotalItem);
+
+                valorTotalMedicao = valorTotalMedicao.add(novoTotalItem);
+
+            } else if (!itemDto.excluir()) {
+                // --- CASO 2: INCLUSÃO DE NOVO ITEM ---
+                var itemOrcamento = itemRepository.findById(itemDto.itemOrcamentoId())
+                        .orElseThrow(() -> new RuntimeException("Item do orçamento não encontrado"));
+
+                validarSaldoItemOrcamento(itemOrcamento, itemDto.quantidadeMedida());
+
+                ItemMedicao novoItemMedido = new ItemMedicao();
+                novoItemMedido.setItem(itemOrcamento);
+                novoItemMedido.setMedicao(medicao);
+                novoItemMedido.setQuantidadeMedida(itemDto.quantidadeMedida());
+
+                BigDecimal totalItem = itemDto.quantidadeMedida().multiply(itemOrcamento.getValorUnitario());
+                novoItemMedido.setValorTotalMedido(totalItem);
+
+                medicao.adicionarItem(novoItemMedido);
+                valorTotalMedicao = valorTotalMedicao.add(totalItem);
             }
-
-            itemOrcamento.setQuantidadeAcumulada(novoAcumulado);
-            itemRepository.save(itemOrcamento);
-
-            ItemMedicao im = new ItemMedicao();
-            im.setItem(itemOrcamento);
-            im.setMedicao(medicao);
-            im.setQuantidadeMedida(itemDto.quantidadeMedida());
-
-            BigDecimal totalItem = itemDto.quantidadeMedida().multiply(itemOrcamento.getValorUnitario());
-            im.setValorTotalMedido(totalItem);
-
-            medicao.adicionarItem(im);
-            valorTotalMedicao = valorTotalMedicao.add(totalItem);
         }
 
         medicao.setValorTotalMedicao(valorTotalMedicao);
+    }
+
+    private void validarSaldoItemOrcamento(br.ce.sop.gestaoorcamento.model.Item itemOrcamento, BigDecimal quantidadeDesejada) {
+        BigDecimal totalPrevisto = itemOrcamento.getQuantidadeAcumulada().add(quantidadeDesejada);
+        if (totalPrevisto.compareTo(itemOrcamento.getQuantidade()) > 0) {
+            throw new RuntimeException("Quantidade medida excede o saldo disponível para: " + itemOrcamento.getDescricao());
+        }
     }
 
     private MedicaoResponseDTO converterParaDTO(Medicao m) {
@@ -145,5 +175,17 @@ public class MedicaoService {
                 m.getValorTotalMedicao(),
                 itensDTO
         );
+    }
+
+    public List<MedicaoResponseDTO> listarPorOrcamento(Long orcamentoId) {
+        return medicaoRepository.findByOrcamentoId(orcamentoId).stream()
+                .map(this::converterParaDTO)
+                .toList();
+    }
+
+    public MedicaoResponseDTO buscarPorId(Long id) {
+        Medicao medicao = medicaoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Medição não encontrada"));
+        return converterParaDTO(medicao);
     }
 }

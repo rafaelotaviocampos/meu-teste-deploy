@@ -71,7 +71,7 @@ public class OrcamentoService {
 
     private OrcamentoResponseDTO converterParaDTO(Orcamento o) {
         var itensDTO = o.getItens().stream()
-                .map(i -> new ItemResponseDTO(i.getId(), i.getDescricao(), i.getQuantidade(), i.getValorUnitario(), i.getValorTotal()))
+                .map(i -> new ItemResponseDTO(i.getId(), i.getDescricao(), i.getQuantidade(), i.getQuantidadeAcumulada() , i.getValorUnitario(), i.getValorTotal()))
                 .toList();
 
         return new OrcamentoResponseDTO(

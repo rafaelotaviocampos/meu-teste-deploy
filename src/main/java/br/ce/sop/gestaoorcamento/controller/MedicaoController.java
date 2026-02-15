@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/medicoes")
 @RequiredArgsConstructor
@@ -37,4 +39,15 @@ public class MedicaoController {
         service.deletar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/orcamento/{orcamentoId}")
+    public ResponseEntity<List<MedicaoResponseDTO>> listarPorOrcamento(@PathVariable Long orcamentoId) {
+        return ResponseEntity.ok(service.listarPorOrcamento(orcamentoId));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MedicaoResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(service.buscarPorId(id));
+    }
+
 }
