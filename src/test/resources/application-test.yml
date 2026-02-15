@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    #url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;CASE_INSENSITIVE_IDENTIFIERS=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS controle_obras
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;CASE_INSENSITIVE_IDENTIFIERS=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS controle_obras
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop  # Cria as tabelas na inicialização e dropa ao fechar
+    properties:
+      hibernate:
+        default_schema: controle_obras  # Garante que as tabelas serão criadas nesse schema
+        format_sql: true                # Para legibilidade do SQL no console
+    show-sql: false                     # Mostra as queries no console

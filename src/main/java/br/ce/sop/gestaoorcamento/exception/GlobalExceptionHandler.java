@@ -1,5 +1,7 @@
 package br.ce.sop.gestaoorcamento.exception;
 
+import br.ce.sop.gestaoorcamento.exception.RecursoNaoEncontradoException;
+import br.ce.sop.gestaoorcamento.exception.RegraDeNegocioException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,15 +12,32 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntime(RuntimeException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+
+    @ExceptionHandler(RegraDeNegocioException.class)
+    public ResponseEntity<?> handleRegra(RegraDeNegocioException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "status", HttpStatus.BAD_REQUEST.value(),
+                        "erro", "Regra de Negócio",
+                        "mensagem", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(RecursoNaoEncontradoException.class)
+    public ResponseEntity<?> handleNotFound(RecursoNaoEncontradoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "status", HttpStatus.NOT_FOUND.value(),
+                        "erro", "Recurso não encontrado",
+                        "mensagem", ex.getMessage()
+                ));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
-        // Pegamos a causa raiz para ser mais preciso
-        String rootCause = ex.getRootCause() != null ? ex.getRootCause().getMessage() : "";
+        String rootCause = ex.getRootCause() != null
+                ? ex.getRootCause().getMessage()
+                : "";
 
         String mensagem = "Erro de integridade: Violação de restrição de banco de dados.";
 
@@ -35,6 +54,17 @@ public class GlobalExceptionHandler {
                         "status", HttpStatus.CONFLICT.value(),
                         "erro", "Conflito de Dados",
                         "mensagem", mensagem
+                ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGeneric(Exception ex) {
+        ex.printStackTrace(); // APENAS PRA DEBUG EM DESENVOLVIMENTO
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "status", 500,
+                        "erro", "Erro interno",
+                        "mensagem", "Ocorreu um erro inesperado."
                 ));
     }
 }

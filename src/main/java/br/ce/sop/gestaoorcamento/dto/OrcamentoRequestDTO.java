@@ -1,6 +1,7 @@
 package br.ce.sop.gestaoorcamento.dto;
 
 import br.ce.sop.gestaoorcamento.model.enums.TipoOrcamento;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,10 +9,12 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record OrcamentoRequestDTO(
+        @Schema(example = "PROTO-2024-001")
         @NotBlank(message = "O número do protocolo é obrigatório")
         @Size(max = 50, message = "O protocolo não pode exceder 50 caracteres")
         String numeroProtocolo,
 
+        @Schema(example = "OBRA_EDIFICACAO")
         @NotNull(message = "O tipo do orçamento é obrigatório")
         TipoOrcamento tipo,
 
