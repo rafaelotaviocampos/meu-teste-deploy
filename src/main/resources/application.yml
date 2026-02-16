@@ -1,4 +1,8 @@
 spring:
+  threads:
+    virtual:
+      enabled: true
+
   datasource:
     url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
     username: ${DB_USERNAME}
@@ -18,8 +22,19 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.orm.jdbc.bind: TRACE
 
+#springdoc:
+#  api-docs:
+#    path: /api-docs
+#  swagger-ui:
+#    path: /swagger-ui.html
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+    operationsSorter: alpha
+
+api:
+  security:
+    token:
+      secret: ${API_SECURITY_TOKEN_SECRET}
