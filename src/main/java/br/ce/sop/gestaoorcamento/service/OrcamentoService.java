@@ -106,11 +106,25 @@ public class OrcamentoService {
                     }
                     orcamento.getItens().remove(itemExistente);
                 } else {
+
+                    if (dto.quantidade().compareTo(itemExistente.getQuantidadeAcumulada()) < 0) {
+
+                        BigDecimal acumulado = itemExistente.getQuantidadeAcumulada();
+
+                        throw new RegraDeNegocioException(
+                                "Não é possível reduzir a quantidade do item '"
+                                        + itemExistente.getDescricao()
+                                        + "'. Já foram medidos "
+                                        + acumulado.setScale(2)
+                        );
+                    }
+
                     itemExistente.setDescricao(dto.descricao());
                     itemExistente.setQuantidade(dto.quantidade());
                     itemExistente.setValorUnitario(dto.valorUnitario());
                     itemExistente.setValorTotal(dto.quantidade().multiply(dto.valorUnitario()));
                 }
+
             } else if (!dto.excluir()) {
                 orcamento.adicionarItem(criarItemDoDTO(dto));
             }
