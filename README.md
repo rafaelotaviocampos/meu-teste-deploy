@@ -1,8 +1,21 @@
 # Sistema de Controle de Orçamentos e Medições
 
-Este projeto é um backend desenvolvido em **Spring Boot** para gerenciar orçamentos, itens e medições, conforme desafio técnico para vaga.
+Este projeto é um ecossistema backend desenvolvido em Spring Boot para o gerenciamento do ciclo de vida de obras, desde o orçamento inicial até a medição física e financeira dos serviços.
 
 ---
+
+## 🚀 O que foi implementado?
+Diferente de um CRUD básico, este sistema conta com:
+
+Segurança: Autenticação e autorização via JWT (JSON Web Token).
+
+Relatórios Dinâmicos: Endpoints de Dashboard para Evolução Financeira Mensal e Resumo de Obras (Orçado vs. Medido).
+
+Documentação: Interface interativa via Swagger/OpenAPI.
+
+Resiliência: Validações rigorosas de saldo de itens para evitar medições a maior.
+
+Soft Delete: Exclusão lógica utilizando a nova anotação @SoftDelete do Hibernate 7.
 
 ## Tecnologias Utilizadas
 
@@ -25,30 +38,59 @@ A modelagem foi estruturada para garantir a integridade dos dados financeiros, u
 
 ---
 
-## Como Executar a Aplicação
+## Como Executar 
 
 ### 1. Requisitos
 - Docker e Docker Compose instalados.
 - JDK 21 instalado (opcional, se rodar via Docker).
 
-### 2. Subir o Banco de Dados
-Na raiz do projeto, execute o comando para iniciar o container do PostgreSQL:
+### 2. Docker
+O projeto está  containerizado.
+Para subir o banco de dados e a aplicação:
+
+Subir tudo:
 
 ```bash
 docker-compose up -d
 ```
-
-### 3. Executar o Backend
-Execute a aplicação utilizando o Maven Wrapper:
-
-```bash
-./mvnw spring-boot:run
-```
-
-> Para parar os containers do banco:
-> ```bash
+Isso iniciará o banco PostgreSQL e a API. O banco será populado automaticamente se houver scripts em ./init-db.
+ 
+Para parar os containers do banco:
+ ```bash
 > docker-compose down
 > ```
+Acessar a Documentação:
+Com a aplicação rodando, acesse o Swagger para testar os endpoints:
+```bash
+http://localhost:8080/swagger-ui/index.html
+```
+
+### 📊 Dashboard e Relatórios (Novidade)
+Foram implementados endpoints analíticos para visão gestora:
+
+Dados para gráficos de linha (mês a mês):
+```bash
+GET /api/v1/dashboard/evolucao-financeira  
+````
+
+Tabela de progresso percentual e saldo a receber por contrato:
+```bash
+GET /api/v1/dashboard/resumo-obras 
+```  
+
+### ⚖️ Regras de Negócio de Destaque
+Trava de Orçamento: Uma vez FINALIZADO, o orçamento não permite alteração de valores, tornando-se um documento oficial para medição.
+
+Integridade de Medição: O sistema impede que a soma das quantidades medidas ultrapasse a quantidade orçada, garantindo o controle do saldo contratual.
+
+Segurança de Deleção: Utilização de Soft Delete para manter o histórico de auditoria mesmo após "exclusões".
+Execute a aplicação utilizando o Maven Wrapper:
+
+### Futuras Melhorias
+
+```bash
+Integração com serviço de armazenamento S3 para fotos das medições.
+```
 
 ---
 

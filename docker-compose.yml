@@ -12,7 +12,26 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
+    # O healthcheck garante que o banco está pronto para receber conexões
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sopdba -d desafio_sop_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  app:
+    build: .
+    container_name: sop_app_container
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/desafio_sop_db
+      - SPRING_DATASOURCE_USERNAME=sopdba
+      - SPRING_DATASOURCE_PASSWORD=sop123
+      - API_SECURITY_TOKEN_SECRET=${API_SECURITY_TOKEN_SECRET:-segredo_padrao_local_123}
+    depends_on:
+      db:
+        condition: service_healthy # Agora a App só sobe quando o banco der "OK"
 
 volumes:
   postgres_data:
