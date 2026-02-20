@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -79,7 +80,7 @@ public class MedicaoService {
             item.setQuantidadeAcumulada(novoAcumulado);
         });
 
-        medicao.setStatus(StatusMedicao.VALIDADA);
+        medicao.validar();
     }
 
     public void deletar(Long id) {
@@ -146,35 +147,53 @@ public class MedicaoService {
     }
 
     private void processarItens(Medicao medicao, List<ItemMedicaoRequestDTO> itensDto) {
+        BigDecimal totalGeralMedicao = BigDecimal.ZERO;
 
-        BigDecimal total = BigDecimal.ZERO;
-        medicao.getItensMedicao().clear();
+        // Criamos uma cópia da lista atual para iterar sem erro de concorrência ao remover
+        var itensAtuais = new ArrayList<>(medicao.getItensMedicao());
 
         for (var dto : itensDto) {
+            // 1. Verificar se o item já existe nesta medição
+            var itemExistente = itensAtuais.stream()
+                    .filter(i -> i.getItem().getId().equals(dto.itemOrcamentoId()))
+                    .findFirst();
 
+            // 2. Se o front marcou para excluir
+            if (dto.excluir() != null && dto.excluir()) {
+                itemExistente.ifPresent(medicao.getItensMedicao()::remove);
+                continue; // Pula para o próximo item
+            }
+
+            // 3. Validar se o item existe no orçamento
             var itemOrcamento = itemRepository.findById(dto.itemOrcamentoId())
-                    .orElseThrow(() ->
-                            new RecursoNaoEncontradoException("Item do orçamento não encontrado."));
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Item do orçamento não encontrado."));
 
             validarQuantidade(dto.quantidadeMedida());
-            validarSaldo(itemOrcamento, dto.quantidadeMedida());
 
-            var itemMedicao = new ItemMedicao();
-            itemMedicao.setMedicao(medicao);
-            itemMedicao.setItem(itemOrcamento);
-            itemMedicao.setQuantidadeMedida(dto.quantidadeMedida());
+            // Se for novo ou se a quantidade mudou, validamos o saldo
+            // (Considerando que se for atualização, o saldo atual já tem o acumulado antigo)
+            validarSaldo(itemOrcamento, dto.quantidadeMedida(), itemExistente.isPresent() ? itemExistente.get().getQuantidadeMedida() : BigDecimal.ZERO);
 
-            BigDecimal totalItem =
-                    dto.quantidadeMedida().multiply(itemOrcamento.getValorUnitario());
+            BigDecimal valorTotalItemMedicao = dto.quantidadeMedida().multiply(itemOrcamento.getValorUnitario());
+            totalGeralMedicao = totalGeralMedicao.add(valorTotalItemMedicao);
 
-            itemMedicao.setValorTotalMedido(totalItem);
-
-            medicao.adicionarItem(itemMedicao);
-
-            total = total.add(totalItem);
+            if (itemExistente.isPresent()) {
+                // ATUALIZAÇÃO: O Hibernate fará um UPDATE
+                var item = itemExistente.get();
+                item.setQuantidadeMedida(dto.quantidadeMedida());
+                item.setValorTotalMedido(valorTotalItemMedicao);
+            } else {
+                // INSERÇÃO: Novo item na medição
+                var novoItemMedicao = new ItemMedicao();
+                novoItemMedicao.setMedicao(medicao);
+                novoItemMedicao.setItem(itemOrcamento);
+                novoItemMedicao.setQuantidadeMedida(dto.quantidadeMedida());
+                novoItemMedicao.setValorTotalMedido(valorTotalItemMedicao);
+                medicao.adicionarItem(novoItemMedicao);
+            }
         }
 
-        medicao.setValorTotalMedicao(total);
+        medicao.setValorTotalMedicao(totalGeralMedicao);
     }
 
     private void validarQuantidade(BigDecimal quantidade) {
@@ -184,9 +203,9 @@ public class MedicaoService {
         }
     }
 
-    private void validarSaldo(Item item, BigDecimal quantidade) {
-        BigDecimal totalPrevisto =
-                item.getQuantidadeAcumulada().add(quantidade);
+    private void validarSaldo(Item item, BigDecimal novaQuantidade, BigDecimal quantidadeAnterior) {
+        BigDecimal acumuladoOutrasMedicoes = item.getQuantidadeAcumulada().subtract(quantidadeAnterior);
+        BigDecimal totalPrevisto = acumuladoOutrasMedicoes.add(novaQuantidade);
 
         if (totalPrevisto.compareTo(item.getQuantidade()) > 0) {
             throw new RegraDeNegocioException(
@@ -197,16 +216,28 @@ public class MedicaoService {
     private MedicaoResponseDTO toDTO(Medicao medicao) {
         var itens = medicao.getItensMedicao().stream()
                 .map(i -> new ItemMedicaoResponseDTO(
+                        i.getId(),
                         i.getItem().getId(),
                         i.getItem().getDescricao(),
+                        i.getItem().getValorUnitario(),
+                        i.getItem().getQuantidade(),
+                        i.getItem().getQuantidadeAcumulada(),
+                        i.getItem().getValorTotal(),
                         i.getQuantidadeMedida(),
-                        i.getValorTotalMedido()))
+                        i.getValorTotalMedido()
+                        ))
                 .toList();
 
         return new MedicaoResponseDTO(
                 medicao.getId(),
                 medicao.getOrcamento().getId(),
+                medicao.getOrcamento().getNumeroProtocolo(),
+                medicao.getNumeroMedicao(),
+                medicao.getObservacao(),
+                medicao.getDataCriacao().toString(),
                 medicao.getDataMedicao().toString(),
+                medicao.getDataValidacao() != null ? medicao.getDataValidacao().toString() : null,
+                medicao.getStatus().getId(),
                 medicao.getValorTotalMedicao(),
                 itens
         );
@@ -220,5 +251,12 @@ public class MedicaoService {
 
     public MedicaoResponseDTO buscarPorId(Long id) {
         return toDTO(buscarMedicao(id));
+    }
+
+    public List<MedicaoResponseDTO> listarTodas() {
+        return medicaoRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .toList();
     }
 }

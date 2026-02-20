@@ -73,7 +73,7 @@ class MedicaoServiceIT {
             var idItem = orcamento.getItens().getFirst().getId();
 
             var itemDto = new ItemMedicaoRequestDTO(null, idItem, new BigDecimal("2.50"), false);
-            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-001", "NF 1", List.of(itemDto));
+            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-001", "NF 1", List.of(itemDto), false);
 
             var medicaoCriada = medicaoService.criar(medicaoDto);
             medicaoService.validar(medicaoCriada.id());
@@ -90,7 +90,7 @@ class MedicaoServiceIT {
             var idItem = orcamento.getItens().getFirst().getId();
 
             var itemDto = new ItemMedicaoRequestDTO(null, idItem, new BigDecimal("1.00"), false);
-            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-LIMITE", "Limite", List.of(itemDto));
+            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-LIMITE", "Limite", List.of(itemDto),false);
 
             var medicaoCriada = medicaoService.criar(medicaoDto);
             assertThat(medicaoCriada.id()).isNotNull();
@@ -108,7 +108,7 @@ class MedicaoServiceIT {
             var idItem = orcamento.getItens().getFirst().getId();
 
             var itemDto = new ItemMedicaoRequestDTO(null, idItem, new BigDecimal("1.01"), false);
-            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-ERRO", "Excesso", List.of(itemDto));
+            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-ERRO", "Excesso", List.of(itemDto),false);
 
             assertThatThrownBy(() -> medicaoService.criar(medicaoDto))
                     .isInstanceOf(RegraDeNegocioException.class)
@@ -122,7 +122,7 @@ class MedicaoServiceIT {
             var idItem = orcamento.getItens().getFirst().getId();
 
             var itemDto = new ItemMedicaoRequestDTO(null, idItem, new BigDecimal("-1.00"), false);
-            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-NEG", "Negativo", List.of(itemDto));
+            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-NEG", "Negativo", List.of(itemDto),false);
 
             assertThatThrownBy(() -> medicaoService.criar(medicaoDto))
                     .isInstanceOf(RegraDeNegocioException.class)
@@ -141,7 +141,7 @@ class MedicaoServiceIT {
             var orcamento = prepararCenarioOrcamento("PROTO-DEL", new BigDecimal("10.00"), BigDecimal.ZERO);
             var idItem = orcamento.getItens().getFirst().getId();
             var itemDto = new ItemMedicaoRequestDTO(null, idItem, new BigDecimal("3.00"), false);
-            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-DEL", "Deletar", List.of(itemDto));
+            var medicaoDto = new MedicaoRequestDTO(orcamento.getId(), "MED-DEL", "Deletar", List.of(itemDto),false);
 
             var medicao = medicaoService.criar(medicaoDto);
             medicaoService.validar(medicao.id());
@@ -167,13 +167,13 @@ class MedicaoServiceIT {
         var orcamento = prepararCenarioOrcamento("PROTO-BLOQUEIO", new BigDecimal("10.00"), BigDecimal.ZERO);
         var idItem = orcamento.getItens().getFirst().getId();
         var medicao = medicaoService.criar(new MedicaoRequestDTO(orcamento.getId(), "MED-FIXA", "NF",
-                List.of(new ItemMedicaoRequestDTO(null, idItem, BigDecimal.ONE, false))));
+                List.of(new ItemMedicaoRequestDTO(null, idItem, BigDecimal.ONE, false)), false));
 
         medicaoService.validar(medicao.id());
 
         // Act & Assert
         var dtoAtualizacao = new MedicaoRequestDTO(orcamento.getId(), "MED-ALTERADA", "Tentando burlar",
-                List.of(new ItemMedicaoRequestDTO(null, idItem, new BigDecimal("2.00"), false)));
+                List.of(new ItemMedicaoRequestDTO(null, idItem, new BigDecimal("2.00"), false)), false);
 
         assertThatThrownBy(() -> medicaoService.atualizar(medicao.id(), dtoAtualizacao))
                 .isInstanceOf(RuntimeException.class)

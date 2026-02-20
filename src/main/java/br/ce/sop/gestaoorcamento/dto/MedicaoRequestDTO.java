@@ -18,5 +18,13 @@ public record MedicaoRequestDTO(
 
         @Valid
         @NotEmpty(message = "A medição deve conter pelo menos um item")
-        List<ItemMedicaoRequestDTO> itens
-) {}
+        List<ItemMedicaoRequestDTO> itens,
+
+        Boolean excluir
+) {
+        public MedicaoRequestDTO {
+                if (excluir == null) {
+                        excluir = false;
+                }
+        }
+}

@@ -6,6 +6,7 @@ import br.ce.sop.gestaoorcamento.exception.RegraDeNegocioException;
 import br.ce.sop.gestaoorcamento.model.Item;
 import br.ce.sop.gestaoorcamento.model.Orcamento;
 import br.ce.sop.gestaoorcamento.model.enums.StatusOrcamento;
+import br.ce.sop.gestaoorcamento.repository.ItemRepository;
 import br.ce.sop.gestaoorcamento.repository.OrcamentoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.List;
 public class OrcamentoService {
 
     private final OrcamentoRepository repository;
+    private final ItemRepository itemRepository;
 
     @Transactional
     public OrcamentoResponseDTO criar(OrcamentoRequestDTO dto) {
@@ -145,7 +147,8 @@ public class OrcamentoService {
                         i.getQuantidade(),
                         i.getQuantidadeAcumulada(),
                         i.getValorUnitario(),
-                        i.getValorTotal()
+                        i.getValorTotal(),
+                        itemRepository.existsByMedicaoVinculada(i.getId())
                 ))
                 .toList();
 
@@ -153,9 +156,28 @@ public class OrcamentoService {
                 o.getId(),
                 o.getNumeroProtocolo(),
                 o.getTipo().getDescricao(),
-                o.getStatus().name(),
+                o.getStatus().getId(),
                 o.getValorTotal(),
                 itensDTO
         );
+    }
+
+    public List<OrcamentoResponseDTO> listarDisponiveisParaMedicao() {
+        return repository.findOrcamentosSemMedicaoAberta()
+                .stream()
+                .map(this::converterParaDTO)
+                .toList();
+    }
+
+    @Transactional
+    public void finalizar(Long id) {
+        Orcamento orcamento = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Orçamento não encontrado."));
+
+        if (orcamento.getItens().isEmpty()) {
+            throw new RegraDeNegocioException("Não é possível finalizar um orçamento sem itens.");
+        }
+        orcamento.finalizar();
+
     }
 }

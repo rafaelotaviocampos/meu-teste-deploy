@@ -10,16 +10,18 @@ public record ItemResponseDTO(
         BigDecimal quantidade,
         BigDecimal quantidadeAcumulada,
         BigDecimal valorUnitario,
-        BigDecimal valorTotal
+        BigDecimal valorTotal,
+        boolean possuiMedicao
 ) {
-    public ItemResponseDTO(Item item) {
+    public ItemResponseDTO(Item item, boolean possuiMedicao) {
         this(
                 item.getId(),
                 item.getDescricao(),
                 item.getQuantidade(),
-                BigDecimal.ZERO, // Depois você implementa a lógica de acumulado
+                item.getQuantidadeAcumulada(),
                 item.getValorUnitario(),
-                item.getValorTotal()
+                item.getValorTotal(),
+                possuiMedicao
         );
     }
 }
