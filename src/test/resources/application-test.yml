@@ -14,3 +14,7 @@ spring:
         default_schema: controle_obras  # Garante que as tabelas serão criadas nesse schema
         format_sql: true                # Para legibilidade do SQL no console
     show-sql: false                     # Mostra as queries no console
+api:
+  security:
+    token:
+      secret: ${API_SECURITY_TOKEN_SECRET:segredo-de-teste-muito-seguro-123}
