@@ -63,4 +63,23 @@ public class OrcamentoController {
     public ResponseEntity<List<ItemResponseDTO>> listarItens(@PathVariable Long id) {
         return ResponseEntity.ok(itemService.listarPorOrcamento(id));
     }
+
+    @PatchMapping("/{id}/finalizar")
+    @Operation(summary = "Validar orçamento")
+    public ResponseEntity<Void> finalizar(@PathVariable Long id) {
+        service.finalizar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/disponiveis-para-medicao")
+    @Operation(summary = "Lista orçamentos que não possuem medições abertas no momento")
+    public ResponseEntity<List<OrcamentoResponseDTO>> listarDisponiveis() {
+        return ResponseEntity.ok(service.listarDisponiveisParaMedicao());
+    }
+
+    @GetMapping("/{id}/itens-com-saldo")
+    @Operation(summary = "Lista apenas os itens de um orçamento que ainda possuem saldo para serem medidos")
+    public ResponseEntity<List<ItemResponseDTO>> listarItensComSaldo(@PathVariable Long id) {
+        return ResponseEntity.ok(itemService.listarItensComSaldo(id));
+    }
 }

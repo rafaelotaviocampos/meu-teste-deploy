@@ -59,4 +59,10 @@ public class MedicaoController {
     public ResponseEntity<MedicaoResponseDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
+
+    @GetMapping // Agora o GET em /api/v1/medicoes vai funcionar!
+    @Operation(summary = "Listar todas as medições")
+    public ResponseEntity<List<MedicaoResponseDTO>> listarTodas() {
+        return ResponseEntity.ok(service.listarTodas());
+    }
 }
