@@ -30,7 +30,7 @@ public class SecurityConfigurations {
 
     private final SecurityFilter securityFilter;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.frontend.url:https://gestao-orcamento-sop-frontend-4wgl97iw9.vercel.app}")
     private String frontendUrl;
 
     @Bean
