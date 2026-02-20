@@ -1,5 +1,6 @@
 package br.ce.sop.gestaoorcamento.model;
 
+import br.ce.sop.gestaoorcamento.exception.RegraDeNegocioException;
 import br.ce.sop.gestaoorcamento.model.enums.StatusOrcamento;
 import br.ce.sop.gestaoorcamento.model.enums.TipoOrcamento;
 import jakarta.persistence.*;
@@ -45,9 +46,20 @@ public class Orcamento extends BaseEntity {
     @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Item> itens = new ArrayList<>();
 
+    // Dentro da classe Orcamento
+    @OneToMany(mappedBy = "orcamento", fetch = FetchType.LAZY)
+    private List<Medicao> medicoes = new ArrayList<>();
+
     // Helper method para garantir o vínculo bidirecional
     public void adicionarItem(Item item) {
         this.itens.add(item);
         item.setOrcamento(this);
+    }
+
+    public void finalizar() {
+        if (this.status == StatusOrcamento.FINALIZADO) {
+            throw new RegraDeNegocioException("Este orçamento já se encontra finalizado.");
+        }
+        this.status = StatusOrcamento.FINALIZADO;
     }
 }
