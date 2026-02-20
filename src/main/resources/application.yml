@@ -1,5 +1,9 @@
+app:
+  frontend:
+    url: https://gestao-orcamento-sop-frontend-4wgl97iw9.vercel.app/
+    
 server:
-  port: ${PORT:8080}
+  port: ${PORT:10230}
 
 spring:
   threads:
@@ -35,4 +39,4 @@ springdoc:
 api:
   security:
     token:
-      secret: ${API_SECURITY_TOKEN_SECRET}
+      secret: ${API_SECURITY_TOKEN_SECRET}/
