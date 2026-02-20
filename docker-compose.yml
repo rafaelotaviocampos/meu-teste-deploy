@@ -29,6 +29,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=sopdba
       - SPRING_DATASOURCE_PASSWORD=sop123
       - API_SECURITY_TOKEN_SECRET=${API_SECURITY_TOKEN_SECRET:-segredo_padrao_local_123}
+      - APP_FRONTEND_URL=https://gestao-orcamento-sop-frontend.vercel.app
+
     depends_on:
       db:
         condition: service_healthy # Agora a App só sobe quando o banco der "OK"
