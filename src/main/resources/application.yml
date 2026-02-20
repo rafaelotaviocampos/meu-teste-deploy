@@ -11,9 +11,9 @@ spring:
       enabled: true
 
   datasource:
-    url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: "jdbc:postgresql://centerbeam.proxy.rlwy.net:42918/postgres"
+    username: postgres
+    password: sClCRqfdSQYxFduFNasvEHHqXILXgYSY
     driver-class-name: org.postgresql.Driver
 
   jpa:
