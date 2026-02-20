@@ -1,6 +1,6 @@
 app:
   frontend:
-    url: https://gestao-orcamento-sop-frontend-4wgl97iw9.vercel.app/
+    url: https://gestao-orcamento-sop-frontend-1a4n1i5gd.vercel.app/
     
 server:
   port: ${PORT:10230}
@@ -11,9 +11,9 @@ spring:
       enabled: true
 
   datasource:
-    url: "jdbc:postgresql://centerbeam.proxy.rlwy.net:42918/postgres"
-    username: postgres
-    password: sClCRqfdSQYxFduFNasvEHHqXILXgYSY
+    url: "jdbc:postgresql://dpg-d6cc59vpm1nc73ch99f0-a.ohio-postgres.render.com:5432/desafio_sop_db"
+    username: sopdba
+    password: HLjNttSfo2z0WTv6PqtlKsgqb8PLUTZL
     driver-class-name: org.postgresql.Driver
 
   jpa:
