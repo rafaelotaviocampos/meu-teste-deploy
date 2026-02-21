@@ -1,9 +1,9 @@
 app:
   frontend:
-    url: http://localhost:3000
-
+    url: https://gestao-orcamento-sop-frontend-1a4n1i5gd.vercel.app/
+    
 server:
-  port: ${PORT:8080}
+  port: ${PORT:10230}
 
 spring:
   threads:
@@ -11,9 +11,9 @@ spring:
       enabled: true
 
   datasource:
-    url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: "jdbc:postgresql://dpg-d6cc59vpm1nc73ch99f0-a.ohio-postgres.render.com:5432/desafio_sop_db"
+    username: sopdba
+    password: HLjNttSfo2z0WTv6PqtlKsgqb8PLUTZL
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -39,4 +39,4 @@ springdoc:
 api:
   security:
     token:
-      secret: ${API_SECURITY_TOKEN_SECRET}
+      secret: ${API_SECURITY_TOKEN_SECRET}/
