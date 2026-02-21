@@ -1,4 +1,4 @@
-# Estágio de Build (Gera o JAR)
+# Estágio de Build
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY . .
@@ -7,8 +7,9 @@ RUN mvn clean package -DskipTests
 # Estágio de Execução
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-# Copia o JAR gerado no estágio anterior
 COPY --from=build /app/target/*.jar app.jar
 
+# NÃO precisa fixar 8080
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT}"]
